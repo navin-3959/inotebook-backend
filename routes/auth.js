@@ -1,25 +1,56 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User'); 
+const User = require('../models/User');
+const { body, validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
+var jwt = require('jsonwebtoken')
 
 // Middleware for JSON requests 
 router.use(express.json());
 
+const JWT_SECRET = "HARRYBHAI"
+
 // Create a new user 
-router.post('/', async (req, res) => {
+router.post('/', [
+    body('name', 'Enter a valid name').isLength({ min: 3 }),
+    body('email', 'Enter a valid email').isEmail(),
+    body('password', 'Password must be at least 5 characters').isLength({ min: 5 }),
+], async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     try {
-        console.log(req.body);
+        let user = await User.findOne({ email: req.body.email });
+        if (user) {
+            return res.status(400).json({ error: "A user with this email already exists" });
+        }
 
-        // Create user instance
-        const user = new User(req.body);
+        const salt = await bcrypt.genSalt(10)
+        let secpass = await bcrypt.hash(req.body.password, salt)
 
-        // Save user to DB
-        await user.save();
+        // Create and save new user without password hashing
+        user = new User({
+            name: req.body.name,
+            email: req.body.email,
+            password: secpass, // Storing raw password (not recommended for production)
+        });
+   const data = {
+    user:{
+        id:user.id
+    }
+   }
+        await user.save(); // Save user to the database
 
-        res.status(201).json({ message: 'User saved successfully', user });
+        const authtoken = jwt.sign(data, JWT_SECRET)
+        console.log(authtoken)
+        res.json({ message: "User created successfully!", authtoken,user });
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server Error' });
+        console.error("Error:", error.message);
+        res.status(500).send("Some error occurred");
     }
 });
 
