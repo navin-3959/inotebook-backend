@@ -49,7 +49,7 @@ router.post('/addnote', fetchuser, [
 })
 
 
-// Route-3 update and existing note using post  "api/notes/updatenote"  -- login required
+// Route-3 update and existing note using put  "api/notes/updatenote"  -- login required
 router.put('/updatenote/:id', fetchuser, async (req, res) => {
     try {
 
@@ -75,6 +75,34 @@ router.put('/updatenote/:id', fetchuser, async (req, res) => {
         //find the to be updated 
         note = await Note.findByIdAndUpdate(id, { $set: newnote }, { new: true })
         res.json({ note })
+    } catch (error) {
+        console.error("Error updating note:", error.message);
+        res.status(500).send("Internal server error occurred");
+    }
+
+})
+// Route-4 delete an existing and existing note using put  "api/notes/deletenote"  -- login required
+router.delete('/deletenote/:id', fetchuser, async (req, res) => {
+    try {
+
+        // const { title, description, tag } = req.body;
+        const { id } = req.params;
+
+        //validate id format
+        if (!mongoose.Types.ObjectId.isValid(id)) { return res.status(400).json({ error: "invalid note id" }) }
+
+        //find note by id 
+        let note = await Note.findById(id)
+        if (!note) { return res.status(400).json({ error: "note not found" }) }
+
+        //check if the user own the note
+        if (note.user.toString() !== req.user.id) { return res.status(403).json({ error: "not allowed" }) }
+
+        
+
+        //find the to be updated 
+        await Note.findByIdAndDelete(id)
+        res.json({ success:"note has been deleted" ,note:note})
     } catch (error) {
         console.error("Error updating note:", error.message);
         res.status(500).send("Internal server error occurred");
