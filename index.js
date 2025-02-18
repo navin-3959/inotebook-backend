@@ -7,6 +7,7 @@ connecttomongo() //connect to mongodb
 const app = express()
 const port = 3000
 app.use('/api/auth', authRoutes);
+
 app.use(express.json()); //middleware
 
 //routes
