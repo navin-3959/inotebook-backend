@@ -20,6 +20,6 @@ app.get('/',(req,res)=>{
 
 //start server after the db connection
 app.listen(port,()=>{
-    console.log(`example app listen at http://localhost:${port}`)  
+    console.log(`iNotebook backend listen at http://localhost:${port}`)  
 })
 
